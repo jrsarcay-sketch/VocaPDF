@@ -1,0 +1,29 @@
+name: Compilar APK
+on:
+  push:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Descomprimir proyecto
+        run: for f in *.zip; do unzip -q -o "$f"; done
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - name: Compilar
+        working-directory: VocaPDF
+        run: gradle assembleRelease --no-daemon --stacktrace
+      - name: Publicar APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp VocaPDF/app/build/outputs/apk/release/*.apk VocaPDF.apk
+          gh release create "build${{ github.run_number }}" VocaPDF.apk --title "VocaPDF" --notes "Descarga e instala VocaPDF.apk" --latest
